@@ -1,6 +1,10 @@
 from statsbombpy import sb
 import pandas as pd
+import LanusStats as ls
 
+def match_competition(id_competetion,id_season):
+    match = sb.matches(id_competetion,id_season)
+    return match
 
 def tarjetas_amarillas_por_partido(id_competencia, id_season):
     # Obtener todos los partidos de la competencia
@@ -345,48 +349,46 @@ def shot_for_player(id_competition, id_season):
     return df_result
 
 def porteria_zero(id_competition, id_season):
+    # Obtener datos de los partidos
     df_euro = sb.matches(competition_id=id_competition, season_id=id_season)
     result = []
     
-    # Filtra los partidos con portería a cero
+    # Filtrar los partidos donde al menos un equipo no recibió goles
     score_zero = df_euro[(df_euro['home_score'] == 0) | (df_euro['away_score'] == 0)]
     
-    for i, match in enumerate(score_zero.itertuples(), 1):
-        if i > 51:
-            break
-        
+    for match in score_zero.itertuples():
         # Obtener eventos para el partido actual
         events_euro = sb.events(match_id=match.match_id)
-        arquero  = events_euro[events_euro['position']=='Goalkeeper']
-        goalkeepers_info = arquero[['player', 'team', 'player_id']].drop_duplicates().reset_index(drop=True)    
+        arquero = events_euro[events_euro['position'] == 'Goalkeeper']
+        goalkeepers_info = arquero[['player_id','player', 'team']].drop_duplicates().reset_index(drop=True)    
         
-        # Filtrar para encontrar al arquero del equipo local
-        home_goalkeeper_info = goalkeepers_info[goalkeepers_info['team'] == match.home_team].iloc[0]
-        home_goalkeeper = home_goalkeeper_info['player']
-        home_goalkeeper_id = home_goalkeeper_info['player_id']
-        
-        # Filtrar para encontrar al arquero del equipo visitante
-        away_goalkeeper_info = goalkeepers_info[goalkeepers_info['team'] == match.away_team].iloc[0]
-        away_goalkeeper = away_goalkeeper_info['player']
-        away_goalkeeper_id = away_goalkeeper_info['player_id']
-        
-        if match.home_score == 0:
-            result.append({
-                'match_id': match.match_id,
-                'country': match.home_team,
-                'player': home_goalkeeper,
-                'player_id': home_goalkeeper_id,
-                'score': 0
-            })
+        # Agregar datos del equipo local si tiene portería a cero
         if match.away_score == 0:
-            result.append({
-                'match_id': match.match_id,
-                'country': match.away_team,
-                'player': away_goalkeeper,
-                'player_id': away_goalkeeper_id,
-                'score': 0
-            })
+            home_goalkeeper = goalkeepers_info[goalkeepers_info['team'] == match.home_team]
+           
+            if not home_goalkeeper.empty:
+                result.append({
+                    'match_id': match.match_id,
+                    'country': match.home_team,
+                    'player_id': home_goalkeeper['player_id'].iloc[0],
+                    'player': home_goalkeeper['player'].iloc[0],
+                    'score': 1
+                })
+        
+        # Agregar datos del equipo visitante si tiene portería a cero
+        if match.home_score == 0:
+            away_goalkeeper = goalkeepers_info[goalkeepers_info['team'] == match.away_team]
+           
+            if not away_goalkeeper.empty:
+                result.append({
+                    'match_id': match.match_id,
+                    'country': match.away_team,
+                    'player_id': away_goalkeeper['player_id'].iloc[0],
+                    'player': away_goalkeeper['player'].iloc[0],
+                    'score': 1
+                })
                 
+    # Crear un DataFrame con los resultados
     df_result = pd.DataFrame(result)
     return df_result
 
