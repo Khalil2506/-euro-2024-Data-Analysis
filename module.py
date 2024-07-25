@@ -252,6 +252,7 @@ def pass_for_match(id_competition, id_season):
             player = row.get('player')
             player_id = row.get('player_id')
             team = row.get('team')
+            pass_total = row.get('pass_total')
             pass_complete = row.get('pass_complete')
             pass_incomplete = row.get('pass_incomplete')
             percentage = row.get('percentage')
@@ -262,6 +263,7 @@ def pass_for_match(id_competition, id_season):
                 'player_id':player_id,
                 'player': player,
                 'team': team,
+                'pass_total':pass_total,
                 'pass_complete': pass_complete,
                 'pass_incomplete': pass_incomplete,
                 'percentage': percentage
@@ -407,6 +409,7 @@ def calcular_minutos_jugados(id_competition, id_season):
                 continue
             
             player_name = player_events['player'].iloc[0]
+            team_name = player_events['team'].iloc[0]
             start_minute = player_events['minute'].min()
             end_minute = player_events['minute'].max()
 
@@ -424,6 +427,7 @@ def calcular_minutos_jugados(id_competition, id_season):
             
             result.append({
                 'match_id': match.match_id,
+                'country': team_name,
                 'player_id': player,
                 'player': player_name,
                 'minutos_jugados': minutos_jugados
